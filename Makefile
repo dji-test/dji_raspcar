@@ -5,6 +5,6 @@ main	:$(objs)
 	gcc $(CFLAGS) -o $@ $^
 
 %.o:%.c
-	gcc $(CFLAGS) -c -o$@ $<
+	gcc $(CFLAGS) -c -o $@ $<
 clean:
 	rm *.o
