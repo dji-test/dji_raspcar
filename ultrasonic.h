@@ -9,8 +9,16 @@
 
 #define SPEED_SOUND 340
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void ultrasonic_init(void);
 float ultrasonic_getDistance(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

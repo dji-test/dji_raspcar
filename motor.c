@@ -3,7 +3,7 @@
 
 //extern volatile u32* gpio_base;
 
-int P = 1;
+int P = 3;
 int I = 0;
 int D = 10;
 int cmp[N_CTL];
@@ -33,20 +33,32 @@ void motor_doPID(int delt)
 	static int delt_sum = 0;
 	int i;
 	delt_sum += delt;
-	int delt_cmp[N_CTL];
 	for (i = 0; i < N_CTL; i++) {
-		delt_cmp[i] = P * delt + D * (delt - delt_last) + I * delt_sum;
-		delt_cmp[i] = delt_cmp[i] > AR ?  AR : delt_cmp[i];
-		delt_cmp[i] = delt_cmp[i] < -AR ? -AR : delt_cmp[i];
-	}
-//	printf("d_c = %d", delt_cmp[0]);
-	for (i = 0; i < N_CTL; i++) {
-		cmp[i] += (int)(delt_cmp[i]);
+		cmp[i] = AR_DIV2 + P * delt + D * (delt - delt_last) + I * delt_sum;
 		cmp[i] = cmp[i] > AR_HIGH ? AR_HIGH : cmp[i];
 		cmp[i] = cmp[i] < AR_LOW  ? AR_LOW  : cmp[i];
 		pwm_set_compare(i + 1, cmp[i]);
 	}
-//	printf("cmp = %d\n", cmp[0]);
+	printf("cmp = %d\n", cmp[0]);
 	delt_last = delt;
+}
+
+void motor_turn(int angle)
+{
+	static int angle_last = 0;
+	int i;
+	for (i = 0; i < N_CTL/2; i++) {
+		cmp[i] = AR_DIV2 + P * angle + D/5 * (angle - angle_last);
+		cmp[i] = cmp[i] > AR_HIGH ? AR_HIGH : cmp[i];
+		cmp[i] = cmp[i] < AR_LOW ? AR_LOW  : cmp[i];
+		pwm_set_compare(i + 1, cmp[i]);
+	}
+	for (i = N_CTL/2; i < N_CTL/2; i++) {
+		cmp[i] = AR_DIV2 - P * angle - D/5 * (angle - angle_last);
+		cmp[i] = cmp[i] > AR_HIGH ? AR_HIGH : cmp[i];
+		cmp[i] = cmp[i] < AR_LOW ? AR_LOW  : cmp[i];
+		pwm_set_compare(i + 1, cmp[i]);
+	}
+	angle_last=angle;
 }
 

@@ -10,7 +10,7 @@
 #include "pwm.h"
 #include "ultrasonic.h"
 #include "motor.h"
-
+#include "camera.h"
 
 u32* peri_phy_base = (u32*)BCM2835_PERI_BASE;	/* peripheral physical address, default is 0x3f000000 for raspberryPi 3b */
 u32 peri_size = BCM2835_PERI_SIZE;	/* peripheral area size*/
@@ -32,7 +32,7 @@ extern int D;
 
 int main()
 {
-	int distance, distance_temp;
+	int distance, distance_temp,angle;
 	int i;
 	char ch;
 	if (base_setup() == -1)	/* find peripheral physical base */
@@ -41,6 +41,7 @@ int main()
 	pwm_init(256, AR);	/* 19.2Mhz/256/100 = 75kHz/100 = 750Hz */
 	ultrasonic_init();	/* set gpio of emiting and receive of the ultrasonic */
 	motor_init();		/* set pwm duty ratio */
+	motor_enable();
 	while (1) {
 		if ((ch = getchar()) == 's') {	/* if 's' is input,then set PID, else go on running for nonblock of stdin */
 			clear_flag(0, O_NONBLOCK);
@@ -56,18 +57,26 @@ int main()
 			motor_disable();
 		else if(ch == 'r')	/* if 'e' is input, then restart the motor's running */
 			motor_enable();
-		distance = 0;
-		for(i = 0; i < 8; i++) {
-			distance_temp = ultrasonic_getDistance();
-			if (distance_temp < -25 || distance_temp > 100)
-				continue;
-			distance += distance_temp;
-			delay_us(100);
+		angle=camera_getAngle();
+//		printf("angle=%d\n",angle);
+		if(angle==0){
+			distance=0;
+			for(i=0;i<8;i++){
+				distance_temp=ultrasonic_getDistance();
+				if(distance_temp<-25 || distance_temp>100){
+					continue;
+				}
+				distance+=distance_temp;
+				delay_us(100);
+			}
+			distance/=8;
+//			printf("D=%d,delt=%dcm\n",distance,distance-DISTANCE_CM);
+			if(camera_getAngle()==0)		
+			motor_doPID(distance-DISTANCE_CM);
 		}
-		distance /= 8;		/* get the distance by average the 8 results */
-//		printf("D = %d,delt = %dcm\n", distance, distance - DISTANCE_CM);		
-		motor_doPID(distance - DISTANCE_CM);	/* do motor PID */
-		delay_ms(40);		/* delay a moment,then go next loop */
+		else
+			motor_turn(angle);
+		delay_ms(40);
 	}
 	return 0;
 }
@@ -91,7 +100,7 @@ int base_setup()
 			return -1;
 		}
 	}
-	peri_base = mmap(NULL, peri_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (u32)peri_phy_base);
+	peri_base = (u32 *)mmap(NULL, peri_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (u32)peri_phy_base);
 	gpio_base = peri_base + BCM2835_GPIO_OFFSET/4;
 	pwm_base = peri_base + BCM2835_PWM_OFFSET/4;
 	clock_base = peri_base + BCM2835_CLOCK_OFFSET/4;

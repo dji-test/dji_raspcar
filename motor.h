@@ -9,10 +9,19 @@
 #define AR_LOW  10
 #define DISTANCE_CM 25
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void motor_init(void);
+void motor_doPID(int delt);
 void motor_enable(void);
 void motor_disable(void);
-void motor_doPID(int delt);
+void motor_turn(int angle);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

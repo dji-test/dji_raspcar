@@ -7,12 +7,19 @@
 
 typedef unsigned int u32;
 
-
 extern volatile u32* gpio_base;
 extern volatile u32* pwm_base;
 extern volatile u32* clock_base;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void pwm_init(u32 psc, u32 arr);
 void pwm_set_compare(u32 channel, u32 cmp);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
